@@ -25,17 +25,15 @@ public class BluetoothManager {
 extension BluetoothManager: BluetoothManagerProtocol {
 	public func requestAuthorization() { }
 	
-	public func isScanning() -> Bool {
+	public func isDiscovering() -> Bool {
 		return self.centralManager.isScanning		
 	}
 	
-	public func checkState(receiver: @escaping (Bool) -> Void) {
-		self.delegate.stateReceiver = receiver
-
-        receiver(self.centralManager.state == .poweredOn)       
+	public func isCentralPoweredOn() -> Bool {
+        return self.centralManager.state == .poweredOn
 	}
 	
-	public func discoverDevice(receiver: @escaping (Peripheral?) -> Void) {
+	public func startDiscovering(receiver: @escaping (Peripheral?) -> Void) {
 		self.delegate.receiver = receiver
 		centralManager.scanForPeripherals(withServices: nil, options: nil)
 	}

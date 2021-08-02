@@ -55,29 +55,27 @@ public protocol BluetoothManagerProtocol {
     func requestAuthorization()
     
     /*
-     * @method isScanning:
+     * @method isDiscovering:
      *
-     * @discussion Whether or not the central is currently scanning.
+     * @discussion Whether or not the central is currently discovering.
      */
-	func isScanning() -> Bool
+	func isDiscovering() -> Bool
 	
 	/*
-     * @method checkState:
+     * @method isCentralPoweredOn:
      *
-     * @param receiver Returns whether the central device is enabled
-     *
-     * @discussion Reads the state of central device
+     * @discussion Returns whether the central device is powered on.
      */     
-	func checkState(receiver: @escaping (Bool) -> Void)
+	func isCentralPoweredOn() -> Bool
 	
 	/*
-     * @method discoverDevice:
+     * @method startDiscovering:
      *
      * @param receiver Returns a Peripheral discovered.
      *
-     * @discussion Discovers Peripherals.
+     * @discussion Start Discovering Peripherals.
      */
-	func discoverDevice(receiver: @escaping (Peripheral?) -> Void)
+	func startDiscovering(receiver: @escaping (Peripheral?) -> Void)
 	
 	/*
      * @method stopDiscovering:

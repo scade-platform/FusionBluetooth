@@ -12,9 +12,9 @@ public class BluetoothManager {
 	typealias BluetoothAdapter = AndroidBluetooth.BluetoothAdapter
 	typealias BluetoothDevice = AndroidBluetooth.BluetoothDevice
 
-	private var currentActivity: Activity? { Application.currentActivity }	
-	private var bluetoothAdapter: BluetoothAdapter? = nil
-
+	var bluetoothAdapter: BluetoothAdapter? = nil
+	private var currentActivity: Activity? { Application.currentActivity }
+	private var connectThread: ConnectThread?
 	
 	public required init() {  
 		self.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -41,7 +41,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		return true
 	}
 	
-    public func isScanning() -> Bool {
+    public func isDiscovering() -> Bool {
     	if let bluetoothApdater = self.bluetoothAdapter {
     		return bluetoothApdater.isDiscovering()
     	} else {
@@ -49,15 +49,15 @@ extension BluetoothManager: BluetoothManagerProtocol {
     	}
     }
     
-	public func checkState(receiver: @escaping (Bool) -> Void) {
+	public func isCentralPoweredOn() -> Bool {
 	    if let bluetoothApdater = self.bluetoothAdapter {
-    		receiver(bluetoothApdater.isEnabled())
+    		return bluetoothApdater.isEnabled()
     	} else {
-    		receiver(false)
+    		return false
     	}		
 	}
 	
-	public func discoverDevice(receiver: @escaping (Peripheral?) -> Void) {
+	public func startDiscovering(receiver: @escaping (Peripheral?) -> Void) {
 		guard checkAuthorization() else {
 			receiver(nil)
 			return
@@ -86,13 +86,17 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		self.bluetoothAdapter?.cancelDiscovery()
 	}
 	
-	public func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
-		let conThread = ConnectThread()
-		
-	}
+    public func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
+    	print("Pavlo connectDevice uuid = \(uuid) deviceArray count = \(BluetoothReceiver.shared.deviceArray.count)")        if let device = BluetoothReceiver.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }) {			connectThread = ConnectThread(manager: self)
+			connectThread?.connect(device: device, receiver: receiver)        } else {            receiver(nil)        }            }
 	
 	public func disconnectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
-		
+    	print("Pavlo disconnectDevice uuid = \(uuid) deviceArray count = \(BluetoothReceiver.shared.deviceArray.count)")	
+		if let device = BluetoothReceiver.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }), let connectThread = self.connectThread {
+			connectThread.disconnect(device: device, receiver: receiver)
+		} else {
+			receiver(nil)
+		}
 	}
 	
 	public func receiveMessage(message: @escaping (String) -> Void) {
@@ -107,63 +111,55 @@ extension BluetoothManager: BluetoothManagerProtocol {
 public class BluetoothReceiver: Object, BroadcastReceiver {
 	static let shared = BluetoothReceiver()
 	var receiver: ((Peripheral?) -> Void)?
-	
-	public func onReceive(context: Context?, intent: Intent?) {
-
-		guard let action = intent?.getAction() else { return }
-		if action == BluetoothDevice.ACTION_FOUND,
-			let device: BluetoothDevice = intent?.getParcelableExtra(name: BluetoothDevice.EXTRA_DEVICE) {
-			let deviceHardwareAddress = device.getAddress()	
-            let deviceName = device.getName()
-            var isConnected = false
-            if BluetoothDevice.ACTION_ACL_CONNECTED == action {
-            	isConnected = true
-	        }
-            
-            let peripheral = Peripheral(name: deviceName, uuid: deviceHardwareAddress, isConnected: isConnected)
-            receiver?(peripheral)
-		}
-    }    
+	var deviceArray: [BluetoothDevice] = []
+		
+    public func onReceive(context: Context?, intent: Intent?) {        guard let action = intent?.getAction() else { return }        if action == BluetoothDevice.ACTION_FOUND,            let device: BluetoothDevice = intent?.getParcelableExtra(name: BluetoothDevice.EXTRA_DEVICE) {            let deviceHardwareAddress = device.getAddress()            let deviceName = device.getName()            var isConnected = false            if BluetoothDevice.ACTION_ACL_CONNECTED == action {                isConnected = true            }                        if !self.deviceArray.contains(device) {                self.deviceArray.append(device)                let peripheral = Peripheral(name: deviceName, uuid: deviceHardwareAddress, isConnected: isConnected)
+                print("Pavlo OnReceive = deviceName = \(deviceName), uuid = \(deviceHardwareAddress), isConnected = \(isConnected)")                receiver?(peripheral)            }        }    }
 }
 
-//public class ConnectThread: Java.Thread {
-//	typealias BluetoothSocket = BluetoothSocket
-//	typealias BluetoothDevice = AndroidBluetooth.BluetoothDevice
-//	var socket: BluetoothSocket?
-//	var device: BluetoothDevice?
-//
-//	public init(device: BluetoothDevice, uuidString: String) {
-//		let uuid = UUID(uuidString: uuidString)
-//		self.socket = device.createRfcommSocketToServiceRecord(uuid: uuid)       
-//  	}
-//  	
-//  	public func run() {
-//  		//self.bluetoothAdapter.cancelDiscovery()
-//		self.socket.connect()
-//   }
-//
-//   public func cancel() {
-//       self.socket.close()
-//   }
-//}
-
-class ConnectThread {
-	typealias BluetoothSocket = AndroidBluetooth.BluetoothSocket
-
-	var socket: BluetoothSocket?
-	var device: BluetoothDevice?
-    var thrd: Thread? = nil
-    
-    public init(device: BluetoothDevice, uuidString: String) {
-        let uuid = UUID.fromString(name: uuidString)
-        self.socket = device.createRfcommSocketToServiceRecord(uuid: uuid) 
+private class ConnectThread {    typealias BluetoothSocket = AndroidBluetooth.BluetoothSocket    var manager: BluetoothManager?    var socket: BluetoothSocket?    var connectedDevice: BluetoothDevice?    var thrd: Thread? = nil
+            public init(manager: BluetoothManager) {        
+        self.manager = manager
+    }        private func run(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
+    	guard let socket = socket else {
+    		receiver?(nil) 
+    		return 
+    	}
+    	
+    	print("Pavlo run thread device uuid = \(device.getAddress())")
+		manager?.bluetoothAdapter?.cancelDiscovery()
+             socket.connect()
         
-        self.thrd = Thread(block: { [weak self] in self!.run() })
-        self.thrd!.start()
+        if socket.isConnected() {
+        	print("Pavlo run thread connected device uuid = \(device.getAddress())")
+        	self.connectedDevice = device
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)
+        	receiver?(peripheral)
+        } else {
+        	print("Pavlo run thread failed connected device uuid = \(device.getAddress())")
+        	receiver?(nil)
+        	socket.close()
+        	self.thrd?.cancel()
+        }
     }
     
-    private func run() {
-	    self.socket?.connect()
+    func connect(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
+        let uuid = UUID.fromString(name: device.getAddress())        self.socket = device.createRfcommSocketToServiceRecord(uuid: uuid)
+            
+    	self.thrd = Thread(block: { [weak self] in self!.run(device: device, receiver: receiver) })
+    	print("Pavlo connect uuid = \(uuid)")        self.thrd?.start()
     }
-}
-
+    
+    func disconnect(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
+        print("Pavlo disconnect uuid = \(device.getAddress()) isConnected = \(socket?.isConnected())")
+    	guard let socket = socket, let connectedDevice = self.connectedDevice, connectedDevice.getAddress() == device.getAddress(), socket.isConnected() else {
+    		receiver?(nil) 
+    		return 
+    	}
+    	
+        let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)
+        receiver?(peripheral)
+        
+    	socket.close()
+    	self.thrd?.cancel()
+    }}
