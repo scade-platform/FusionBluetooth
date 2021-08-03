@@ -154,6 +154,9 @@ private class ConnectThread {
     }
     
     private func run(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
+        let uuid = UUID.fromString(name: "818ec588-f48d-11eb-9a03-0242ac130003")
+        self.socket = device.createRfcommSocketToServiceRecord(uuid: uuid)
+            
     	guard let socket = socket else {
     		receiver?(nil) 
     		return 
@@ -161,7 +164,7 @@ private class ConnectThread {
     	
     	print("Pavlo run thread device uuid = \(device.getAddress())")
 		manager?.bluetoothAdapter?.cancelDiscovery()
-     
+
         socket.connect()
         
         if socket.isConnected() {
@@ -177,10 +180,7 @@ private class ConnectThread {
         }
     }
     
-    func connect(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
-        let uuid = UUID.fromString(name: "818ec588-f48d-11eb-9a03-0242ac130003")
-        self.socket = device.createRfcommSocketToServiceRecord(uuid: uuid)
-            
+    func connect(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {            
     	self.thrd = Thread(block: { [weak self] in self!.run(device: device, receiver: receiver) })
     	print("Pavlo connect uuid = \(uuid)")
         self.thrd?.start()
