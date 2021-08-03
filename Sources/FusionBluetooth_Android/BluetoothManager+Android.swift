@@ -182,7 +182,7 @@ private class ConnectThread {
     
     func connect(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {            
     	self.thrd = Thread(block: { [weak self] in self!.run(device: device, receiver: receiver) })
-    	print("Pavlo connect uuid = \(uuid)")
+    	print("Pavlo connect device name = \(device.getName())")
         self.thrd?.start()
     }
     
