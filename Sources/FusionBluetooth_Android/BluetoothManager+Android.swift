@@ -156,8 +156,8 @@ private class ConnectThread {
     private func run(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
     	let gotUuids = device.fetchUuidsWithSdp()
     	print("Pavlo run thread gotUuids = \(gotUuids) uuids count = \(device.getUuids().count)")
-    	let testUuid = UUID.fromString(name: "747F519F-6315-6D97-CD8A-18BDA7949A47")
-    	guard /*gotUuids, device.getUuids().count > 0, let parcelUuid = device.getUuids()[0], let uuid = parcelUuid.getUuid(),*/ let socket = device.createRfcommSocketToServiceRecord(uuid: testUuid) else {
+    	let testUuid = UUID.fromString(name: "00001101-0000-1000-8000-00805F9B34FB")
+    	guard /*gotUuids, device.getUuids().count > 0, let parcelUuid = device.getUuids()[0], let uuid = parcelUuid.getUuid(),*/ let socket = device.createInsecureRfcommSocketToServiceRecord(uuid: testUuid) else {
     		receiver?(nil) 
     		return 
     	}
