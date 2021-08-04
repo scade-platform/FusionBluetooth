@@ -71,7 +71,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		 		filter.addAction(action: BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
 		 		filter.addAction(action: BluetoothDevice.ACTION_ACL_DISCONNECTED)
 		 		
-		 		activity.registerReceiver(receiver: BluetoothReceiver.shared, filter: filter)
+		 		let _ = activity.registerReceiver(receiver: BluetoothReceiver.shared, filter: filter)
 		 		BluetoothReceiver.shared.receiver = receiver
 		 	} else {
 		 		receiver(nil)
@@ -83,7 +83,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	}
 	
 	public func stopDiscovering() {
-		self.bluetoothAdapter?.cancelDiscovery()
+		let _ = self.bluetoothAdapter?.cancelDiscovery()
 	}
 	
     public func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
@@ -153,17 +153,15 @@ private class ConnectThread {
         self.manager = manager
     }
     
-    private func run(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
-        let uuid = UUID.fromString(name: "818ec588-f48d-11eb-9a03-0242ac130003")
-        self.socket = device.createRfcommSocketToServiceRecord(uuid: uuid)
-            
-    	guard let socket = socket else {
+    private func run(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {            
+    	guard let parcelUuid = device.getUuids()[0], let uuid = parcelUuid.getUuid(), let socket = device.createRfcommSocketToServiceRecord(uuid: uuid) else {
     		receiver?(nil) 
     		return 
     	}
     	
+    	self.socket = socket
     	print("Pavlo run thread device uuid = \(device.getAddress())")
-		manager?.bluetoothAdapter?.cancelDiscovery()
+		let _ = manager?.bluetoothAdapter?.cancelDiscovery()
 
         socket.connect()
         
