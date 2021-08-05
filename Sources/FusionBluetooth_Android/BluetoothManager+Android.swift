@@ -149,25 +149,31 @@ private class ConnectThread {
     var connectedDevice: BluetoothDevice?
     var thrd: Thread? = nil
         
+	let MY_UUID = "00001101-0000-1000-8000-00805F9B34FB"
+	
     public init(manager: BluetoothManager) {        
         self.manager = manager
     }
     
     private func run(device: BluetoothDevice, receiver: ((Peripheral?) -> Void)?) {
+    	var myUuid = UUID.fromString(name: MY_UUID)
     	let gotUuids = device.fetchUuidsWithSdp()
-    	print("Pavlo run thread gotUuids = \(gotUuids) uuids count = \(device.getUuids().count)")
-    	let testUuid = UUID.fromString(name: "00001101-0000-1000-8000-00805F9B34FB")
-    	guard /*gotUuids, device.getUuids().count > 0, let parcelUuid = device.getUuids()[0], let uuid = parcelUuid.getUuid(),*/ let socket = device.createInsecureRfcommSocketToServiceRecord(uuid: testUuid) else {
-    		receiver?(nil) 
-    		return 
+    	print("Pavlo run thread gotUuids = \(gotUuids) uuids count = \(device.getUuids().count)")    	
+    	if gotUuids, device.getUuids().count > 0, let parcelUuid = device.getUuids()[0], let uuid = parcelUuid.getUuid() {
+			myUuid = uuid
     	}
     	
+    	guard let socket = device.createInsecureRfcommSocketToServiceRecord(uuid: myUuid) else {
+    		receiver?(nil) 
+    		return     		
+    	}
     	self.socket = socket
     	print("Pavlo run thread device uuid = \(device.getAddress())")
 		let _ = manager?.bluetoothAdapter?.cancelDiscovery()
 
         socket.connect()
-        
+        print("Pavlo run thread pass the connect")
+        print("Pavlo run thread socket is connected = \(socket.isConnected())")
         if socket.isConnected() {
         	print("Pavlo run thread connected device uuid = \(device.getAddress())")
         	self.connectedDevice = device
