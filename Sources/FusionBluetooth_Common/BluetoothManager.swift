@@ -40,6 +40,21 @@ public struct Peripheral: Equatable {
 }
 
 /**
+ *  @enum DeviceState
+ *
+ *  @discussion For only iOS
+ *
+ */
+public enum DeviceState {
+    case unknown // State unknown, update imminent.
+    case unsupported // The platform doesn't support the Bluetooth Low Energy Central/Client role.
+    case unauthorized // The application is not authorized to use the Bluetooth Low Energy role.
+    case poweredOn // Bluetooth is currently powered on and available to use.    
+    case poweredOff // Bluetooth is currently powered off.
+    case resetting // The connection with the system service was momentarily lost, update imminent.
+}
+
+/**
  *  @protocol BluetoothManagerProtocol
  *
  *  @discussion The delegate of managing Bluetooth.
@@ -54,6 +69,13 @@ public protocol BluetoothManagerProtocol {
      */
     func requestAuthorization()
     
+	/*
+     * @method isSupporting:
+     *
+     * @discussion Returns whether the central device supports the Bluetooth.
+     */
+    func isSupporting() -> Bool
+        
     /*
      * @method isDiscovering:
      *
@@ -62,11 +84,11 @@ public protocol BluetoothManagerProtocol {
 	func isDiscovering() -> Bool
 	
 	/*
-     * @method isCentralPoweredOn:
+     * @method isEnabled:
      *
-     * @discussion Returns whether the central device is powered on.
+     * @discussion Returns whether the central device is enabled.
      */     
-	func isCentralPoweredOn() -> Bool
+	func isEnabled() -> Bool
 	
 	/*
      * @method startDiscovering:
@@ -85,6 +107,13 @@ public protocol BluetoothManagerProtocol {
 	func stopDiscovering()
 	
 	/*
+     * @method enableBluetooth:
+     *
+     * @discussion Create the request to the user to activate the bluetooth. For only Android
+     */
+	func enableBluetooth()
+		
+	/*
      * @method connectDevice:
      *
      * @param uuid Peripheral identifier in iOS and Device Mac addres in Android 
@@ -95,7 +124,7 @@ public protocol BluetoothManagerProtocol {
 	func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void)
 	
 	/*
-     * @method connectDevice:
+     * @method disconnectDevice:
      *
      * @param uuid Peripheral identifier in iOS and Device Mac addres in Android 
      * @param receiver Returns the Peripheral disconnected.
@@ -113,6 +142,15 @@ public protocol BluetoothManagerProtocol {
      */
 	func receiveMessage(message: @escaping (String) -> Void)
 	
+	/*
+     * @method listenToStateEvents:
+     *
+     * @param receiver Returns the DeviceState. For only iOS
+     *
+     * @discussion Listen to state events of bluetooth device.
+     */
+	func listenToStateEvents(receiver: @escaping (DeviceState) -> Void)
+		
 	/*
      * @method sendMessage:
      *

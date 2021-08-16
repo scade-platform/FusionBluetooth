@@ -5,7 +5,7 @@ import CoreBluetooth
 public class BluetoothManager {
     fileprivate class CBCDelegate: NSObject {
         typealias Receiver = (Peripheral?) -> Void
-        typealias StateReceiver = (Bool) -> Void
+        typealias StateReceiver = (DeviceState) -> Void
         var receiver: Receiver?
         var stateReceiver: StateReceiver?
         
@@ -25,11 +25,15 @@ public class BluetoothManager {
 extension BluetoothManager: BluetoothManagerProtocol {
 	public func requestAuthorization() { }
 	
+	public func isSupporting() -> Bool {
+        return self.centralManager.state != .unsupported
+	}
+		
 	public func isDiscovering() -> Bool {
 		return self.centralManager.isScanning		
 	}
 	
-	public func isCentralPoweredOn() -> Bool {
+	public func isEnabled() -> Bool {
         return self.centralManager.state == .poweredOn
 	}
 	
@@ -60,6 +64,9 @@ extension BluetoothManager: BluetoothManagerProtocol {
         }
 	}
 	
+	public func enableBluetooth() {		
+	}
+	
 	public func receiveMessage(message: @escaping (String) -> Void) {
 		
 	}
@@ -67,11 +74,31 @@ extension BluetoothManager: BluetoothManagerProtocol {
     public func sendMessage(message: String) {
     	
     }
+    
+	public func listenToStateEvents(receiver: @escaping (DeviceState) -> Void) {
+		self.delegate.stateReceiver = receiver
+	}
 }
 
 extension BluetoothManager.CBCDelegate: CBCentralManagerDelegate {
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {        
-        stateReceiver?(central.state == .poweredOn)
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        switch central.state {
+        case .unknown:
+          	stateReceiver?(.unknown)
+        case .resetting:
+          	stateReceiver?(.resetting)
+        case .unsupported:
+          	stateReceiver?(.unsupported)
+        case .unauthorized:
+          	stateReceiver?(.unauthorized)
+        case .poweredOff:
+          	stateReceiver?(.poweredOff)
+        case .poweredOn:
+        	stateReceiver?(.poweredOn)
+
+        @unknown default:
+        	stateReceiver?(.unknown)
+        }
     }
   
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
