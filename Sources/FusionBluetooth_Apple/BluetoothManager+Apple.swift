@@ -161,19 +161,16 @@ extension BluetoothManager.CBCDelegate: CBPeripheralDelegate {
             let characteristic = characteristic as CBCharacteristic
 
             if characteristic.properties.contains(.write) {
-                print("\(characteristic.uuid): properties contains .write")
                 if let writeData = writeData {
                     peripheral.writeValue(writeData, for: characteristic, type: .withResponse)
                 }
             }
             
             if characteristic.properties.contains(.read) {
-                print("\(characteristic.uuid): properties contains .read")
                 peripheral.readValue(for: characteristic)
             }
             
             if characteristic.properties.contains(.notify) {
-                print("\(characteristic.uuid): properties contains .notify")
                 peripheral.setNotifyValue(true, for: characteristic)
             }
         }
