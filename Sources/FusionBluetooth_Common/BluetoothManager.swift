@@ -70,6 +70,13 @@ public protocol BluetoothManagerProtocol {
     func requestAuthorization()
     
     /*
+     * @method isAuthorized:
+     *
+     * @discussion Returns whether the app is authorized.
+     */
+    func isAuthorized() -> Bool
+    
+    /*
      * @method isSupporting:
      *
      * @discussion Returns whether the central device supports the Bluetooth.

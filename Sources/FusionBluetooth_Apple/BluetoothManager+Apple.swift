@@ -27,8 +27,15 @@ public class BluetoothManager {
 }
 
 extension BluetoothManager: BluetoothManagerProtocol {
-    public func requestAuthorization() { }
+    public func checkAuthorization() { }
     
+    public func isAuthorized() -> Bool {
+        if #available(iOS 13.0, *) {
+             return centralManager.authorization == .allowedAlways
+         }
+         return CBPeripheralManager.authorizationStatus() == .authorized
+    }
+        
     public func isSupporting() -> Bool {
         return self.centralManager.state != .unsupported
     }
