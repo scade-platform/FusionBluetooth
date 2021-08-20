@@ -116,9 +116,16 @@ public protocol BluetoothManagerProtocol {
     /*
      * @method enableBluetooth:
      *
-     * @discussion Create the request to the user to activate the bluetooth. For only Android
+     * @discussion Returns true to indicate adapter startup has begun, or false on immediate error. For only Android
      */
-    func enableBluetooth()
+    func enableBluetooth() -> Bool
+    
+    /*
+     * @method disableBluetooth:
+     *
+     * @discussion Returns true to indicate adapter shutdown has begun, or false on immediate error. For only Android
+     */
+    func disableBluetooth() -> Bool    
         
     /*
      * @method connectDevice:

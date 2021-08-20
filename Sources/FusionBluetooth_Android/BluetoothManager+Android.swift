@@ -12,7 +12,8 @@ public class BluetoothManager {
 	typealias BluetoothAdapter = AndroidBluetooth.BluetoothAdapter
 	typealias BluetoothDevice = AndroidBluetooth.BluetoothDevice
 
-	var bluetoothAdapter: BluetoothAdapter? = nil
+	var bluetoothAdapter: BluetoothAdapter?
+	var bluetoothLeScanner: BluetoothLeScanner?	
 	private var currentActivity: Activity? { Application.currentActivity }
 	private var connectThread: ConnectThread?
 	
@@ -27,8 +28,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		currentActivity?.requestPermissions(      
 		permissions: [Manifest.permission.ACCESS_FINE_LOCATION], requestCode: 1111)
 	}
-
-	public func checkAuthorization() -> Bool {
+   
+	public func isAuthorized() -> Bool {
 		guard
 			let status = currentActivity?.checkSelfPermission(
 			permission: Manifest.permission.ACCESS_FINE_LOCATION),
@@ -41,6 +42,10 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		return true
 	}
 	
+    public func isSupporting() -> Bool {
+    	return self.bluetoothAdapter != nil
+    }
+    	
     public func isDiscovering() -> Bool {
     	if let bluetoothApdater = self.bluetoothAdapter {
     		return bluetoothApdater.isDiscovering()
@@ -49,7 +54,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
     	}
     }
     
-	public func isCentralPoweredOn() -> Bool {
+	public func isEnabled() -> Bool {
 	    if let bluetoothApdater = self.bluetoothAdapter {
     		return bluetoothApdater.isEnabled()
     	} else {
@@ -58,25 +63,15 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	}
 	
 	public func startDiscovering(receiver: @escaping (Peripheral?) -> Void) {
-		guard checkAuthorization() else {
+		guard isAuthorized() else {
 			receiver(nil)
 			return
 		}
         	
-		 if let apdater = self.bluetoothAdapter, let activity = self.currentActivity {
-		 	if apdater.startDiscovery() {
-		 		let filter = IntentFilter()
-		 		filter.addAction(action: BluetoothDevice.ACTION_FOUND)
-		 		filter.addAction(action: BluetoothDevice.ACTION_ACL_CONNECTED)
-		 		filter.addAction(action: BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
-		 		filter.addAction(action: BluetoothDevice.ACTION_ACL_DISCONNECTED)
-		 		
-		 		let _ = activity.registerReceiver(receiver: BluetoothReceiver.shared, filter: filter)
-		 		BluetoothReceiver.shared.receiver = receiver
-		 	} else {
-		 		receiver(nil)
-		 	}
-		 	
+        if let adapter = self.bluetoothAdapter, let bluetoothLeScanner = adapter.getBluetoothLeScanner() {
+            self.bluetoothLeScanner = bluetoothLeScanner
+            bluetoothLeScanner.startScan(callback: LeScanCallback.shared)
+            LeScanCallback.shared.receiver = receiver
     	} else {
     		receiver(nil)
     	}
@@ -103,13 +98,54 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		}
 	}
 	
-	public func receiveMessage(message: @escaping (String) -> Void) {
+    public func enableBluetooth() -> Bool {
+	    if let bluetoothApdater = self.bluetoothAdapter {
+    		return bluetoothApdater.enable()
+    	} else {
+    		return false
+    	}
+    }
+    
+    public func disableBluetooth() -> Bool {
+	    if let bluetoothApdater = self.bluetoothAdapter {
+    		return bluetoothApdater.disable()
+    	} else {
+    		return false
+    	}
+    }    
+    	
+	public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
 		
 	}
 	
-    public func sendMessage(message: String) {
+	public func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
+	
+	}
+    public func writeCharacteristic(uuid: String, data: Data) {
     	
     }
+    
+    public func listenToStateEvents(receiver: @escaping (DeviceState) -> Void) {
+    }    
+}
+
+class LeScanCallback: Object, ScanCallback {
+	static let shared = LeScanCallback()
+	var receiver: ((Peripheral?) -> Void)?
+	var deviceArray: [BluetoothDevice] = []
+	
+	func onScanResult(callbackType: Int32, result: ScanResult?) {
+		guard let result = result, let device = result.getDevice() else { return }
+        let deviceHardwareAddress = device.getAddress()
+        let deviceName = device.getName()
+        
+        if !self.deviceArray.contains(device) {
+            self.deviceArray.append(device)
+            let peripheral = Peripheral(name: deviceName, uuid: deviceHardwareAddress, isConnected: false)
+
+            receiver?(peripheral)
+        }
+	}
 }
 
 public class BluetoothReceiver: Object, BroadcastReceiver {
@@ -149,7 +185,7 @@ private class ConnectThread {
         
 	let MY_UUID = "00001101-0000-1000-8000-00805F9B34FB"
 	
-    public init(manager: BluetoothManager) {        
+    public init(manager: BluetoothManager) {
         self.manager = manager
     }
     

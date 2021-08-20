@@ -75,9 +75,12 @@ extension BluetoothManager: BluetoothManagerProtocol {
         }
     }
     
-    public func enableBluetooth() {
+    public func enableBluetooth() -> Bool {
     }
-    
+
+	public func disableBluetooth() -> Bool {
+    }
+        
     public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
         self.delegate.readCharacteristicReceiver = receiver
         if let peripheral = self.delegate.peripheralArray.first(where: { uuid == "\($0.identifier)" }) {
