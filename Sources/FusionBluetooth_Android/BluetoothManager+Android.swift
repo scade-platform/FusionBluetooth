@@ -134,7 +134,7 @@ public class LeScanCallback: Object, ScanCallback {
 	var receiver: ((Peripheral?) -> Void)?
 	var deviceArray: [BluetoothDevice] = []
 	
-	func onScanResult(callbackType: Int32, result: ScanResult?) {
+	public func onScanResult(callbackType: Int32, result: ScanResult?) {
 		guard let result = result, let device = result.getDevice() else { return }
         let deviceHardwareAddress = device.getAddress()
         let deviceName = device.getName()
