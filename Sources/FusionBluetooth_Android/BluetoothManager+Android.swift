@@ -129,7 +129,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }    
 }
 
-class LeScanCallback: Object, ScanCallback {
+public class LeScanCallback: Object, ScanCallback {
 	static let shared = LeScanCallback()
 	var receiver: ((Peripheral?) -> Void)?
 	var deviceArray: [BluetoothDevice] = []
