@@ -94,6 +94,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
             }
             self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
             GattCallback.shared.receiver = receiver
+            GattCallback.shared.device = device
         } else {
             receiver(nil)
         }
@@ -142,13 +143,21 @@ extension BluetoothManager: BluetoothManagerProtocol {
 public class GattCallback: Object, BluetoothGattCallback {
 	static let shared = GattCallback()
 	var receiver: ((Peripheral?) -> Void)?
+	var device: BluetoothDevice?
 	
     public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
-        if newState == BluetoothProfile.STATE_CONNECTED {
-
-        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-            
-        }
+    	guard let device = device else {
+    		receiver?(nil)
+    		return
+    	}
+    	
+        if newState == BluetoothProfileStatic.STATE_CONNECTED {
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)        	receiver?(peripheral)
+        } else if (newState == BluetoothProfileStatic.STATE_DISCONNECTED) {
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)        	receiver?(peripheral)            
+        } else {
+        	receiver?(nil)
+        }        
     }
 }
 
