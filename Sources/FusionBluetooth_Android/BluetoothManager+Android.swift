@@ -13,7 +13,9 @@ public class BluetoothManager {
 	typealias BluetoothDevice = AndroidBluetooth.BluetoothDevice
 
 	var bluetoothAdapter: BluetoothAdapter?
-	var bluetoothLeScanner: BluetoothLeScanner?	
+	var bluetoothLeScanner: BluetoothLeScanner?
+	var bluetoothGatt: BluetoothGatt?
+		
 	private var currentActivity: Activity? { Application.currentActivity }
 	private var connectThread: ConnectThread?
 	
@@ -79,23 +81,31 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	
 	public func stopDiscovering() {
 		let _ = self.bluetoothAdapter?.cancelDiscovery()
+		if let bluetoothLeScanner = self.bluetoothLeScanner {
+			bluetoothLeScanner.stopScan(callback: LeScanCallback.shared)
+		}
 	}
 	
     public func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
         if let device = BluetoothReceiver.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }) {
-			connectThread = ConnectThread(manager: self)
-			connectThread?.connect(device: device, receiver: receiver)
+            if let bluetoothGatt = self.bluetoothGatt {
+                bluetoothGatt.close()
+                self.bluetoothGatt = nil
+            }
+            self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
+            GattCallback.shared.receiver = receiver
         } else {
             receiver(nil)
-        }        
+        }
     }
 	
 	public func disconnectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
-		if let device = BluetoothReceiver.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }), let connectThread = self.connectThread {
-			connectThread.disconnect(device: device, receiver: receiver)
-		} else {
-			receiver(nil)
+		if let bluetoothGatt = self.bluetoothGatt {
+			bluetoothGatt.close()
+			self.bluetoothGatt = nil
 		}
+		
+		receiver(nil)		
 	}
 	
     public func enableBluetooth() -> Bool {
@@ -127,6 +137,19 @@ extension BluetoothManager: BluetoothManagerProtocol {
     
     public func listenToStateEvents(receiver: @escaping (DeviceState) -> Void) {
     }    
+}
+
+public class GattCallback: Object, BluetoothGattCallback {
+	static let shared = GattCallback()
+	var receiver: ((Peripheral?) -> Void)?
+	
+    public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
+        if newState == BluetoothProfile.STATE_CONNECTED {
+
+        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+            
+        }
+    }
 }
 
 public class LeScanCallback: Object, ScanCallback {

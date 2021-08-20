@@ -43,7 +43,7 @@ let package = Package(
               .product(name: "AndroidOS", package: "Android", condition: .when(platforms: [.android])),
               .product(name: "AndroidBluetooth", package: "Android", condition: .when(platforms: [.android]))              
             ],
-            resources: [.copy("Generated/LeScanCallback.java"), .copy("Generated/BluetoothReceiver.java")]         
+            resources: [.copy("Generated/LeScanCallback.java"), .copy("Generated/BluetoothReceiver.java"), .copy("Generated/GattCallback.java")]         
         )
     ]
 )
