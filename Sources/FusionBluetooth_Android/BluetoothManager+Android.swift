@@ -180,6 +180,7 @@ public class GattCallback: Object, BluetoothGattCallback {
         if newState == BluetoothProfileStatic.STATE_CONNECTED {
         	print("Pavlo onConnectionStateChange connected")
         	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)
+        	let _ = gatt?.discoverServices()
         	connectReceiver?(peripheral)
         } else if (newState == BluetoothProfileStatic.STATE_DISCONNECTED) {
         	print("Pavlo onConnectionStateChange disconnected")
