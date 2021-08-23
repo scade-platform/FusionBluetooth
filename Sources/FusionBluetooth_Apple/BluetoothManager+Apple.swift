@@ -50,6 +50,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
     
     public func startDiscovering(receiver: @escaping (Peripheral?) -> Void) {
         self.delegate.receiver = receiver
+        guard isAuthorized() else {            receiver(nil)            return        }        
         centralManager.scanForPeripherals(withServices: nil, options: nil)
     }
     
