@@ -93,7 +93,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
                 self.bluetoothGatt = nil
             }
             self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
-            GattCallback.shared.receiver = receiver
+            GattCallback.shared.connectReceiver = receiver
+            GattCallback.shared.connectReceiver = receiver
             GattCallback.shared.device = device
         } else {
             receiver(nil)
@@ -123,17 +124,30 @@ extension BluetoothManager: BluetoothManagerProtocol {
     	} else {
     		return false
     	}
-    }    
+    }
     	
 	public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
-		
+		if let bluetoothGatt = self.bluetoothGatt {
+			GattCallback.shared.dataReceiver = receiver
+			let _ = bluetoothGatt.discoverServices()
+		} else {
+			receiver(nil)	
+		}		
 	}
 	
 	public func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
-	
+		if let bluetoothGatt = self.bluetoothGatt {
+			GattCallback.shared.dataReceiver = receiver
+			let _ = bluetoothGatt.discoverServices()
+		} else {
+			receiver(nil)	
+		}		
 	}
     public func writeCharacteristic(uuid: String, data: Data) {
-    	
+		if let bluetoothGatt = self.bluetoothGatt {
+			GattCallback.shared.writeData = data
+			let _ = bluetoothGatt.discoverServices()
+		}
     }
     
     public func listenToStateEvents(receiver: @escaping (DeviceState) -> Void) {
@@ -142,23 +156,73 @@ extension BluetoothManager: BluetoothManagerProtocol {
 
 public class GattCallback: Object, BluetoothGattCallback {
 	static let shared = GattCallback()
-	var receiver: ((Peripheral?) -> Void)?
+	var connectReceiver: ((Peripheral?) -> Void)?
+	var dataReceiver: ((Data?) -> Void)?	
 	var device: BluetoothDevice?
+	var writeData: Data?
 	
     public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
     	guard let device = device else {
-    		receiver?(nil)
+    		connectReceiver?(nil)
     		return
     	}
     	
         if newState == BluetoothProfileStatic.STATE_CONNECTED {
-        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)        	receiver?(peripheral)
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)        	connectReceiver?(peripheral)
         } else if (newState == BluetoothProfileStatic.STATE_DISCONNECTED) {
-        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)        	receiver?(peripheral)            
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)        	connectReceiver?(peripheral)            
         } else {
-        	receiver?(nil)
+        	connectReceiver?(nil)
         }        
     }
+    
+    public func onServicesDiscovered(gatt: BluetoothGatt?, status: Int32) {
+        if status == BluetoothGatt.GATT_SUCCESS, let gatt = gatt, let services = gatt.getServices() {
+            for gattService in services {
+                if let gattService = gattService, let characteristics = gattService.getCharacteristics() {
+                    for gattCharacteristic in characteristics {
+                    	guard let gattCharacteristic = gattCharacteristic else { continue }
+                        if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) == 0 &&
+                            (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) == 0 {
+                            if let writeData = writeData {
+                                let _ = gattCharacteristic.setValue(value: writeData.map{Int8(bitPattern: $0)})
+                                let _ = gatt.writeCharacteristic(characteristic: gattCharacteristic)
+                            }
+                        } else if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) == 0 {
+                            let _ = gatt.readCharacteristic(characteristic: gattCharacteristic)
+                        } else if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) == 0 {
+                            let _ = gatt.setCharacteristicNotification(characteristic: gattCharacteristic, enable: true)
+                            let _ = gatt.readCharacteristic(characteristic: gattCharacteristic)
+                        }
+                    }
+                }
+            }
+        } else {
+            dataReceiver?(nil)
+        }
+    }
+    
+	public func onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int32) {
+
+	}
+	    
+    public func onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int32) {
+    	if let bytes = characteristic?.getValue() {
+    		let readValue = Data(bytes: bytes, count: bytes.count)
+			dataReceiver?(readValue)
+    	} else {
+			dataReceiver?(nil)    		
+    	}
+	}
+	
+	public func onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
+    	if let bytes = characteristic?.getValue() {
+    		let readValue = Data(bytes: bytes, count: bytes.count)
+			dataReceiver?(readValue)
+    	} else {
+			dataReceiver?(nil)    		
+    	}
+	}
 }
 
 public class LeScanCallback: Object, ScanCallback {

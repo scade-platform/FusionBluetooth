@@ -76,9 +76,11 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }
     
     public func enableBluetooth() -> Bool {
+    	return false
     }
 
 	public func disableBluetooth() -> Bool {
+		return false
     }
         
     public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
