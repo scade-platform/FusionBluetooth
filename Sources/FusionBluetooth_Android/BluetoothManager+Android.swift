@@ -132,7 +132,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		if let bluetoothGatt = self.bluetoothGatt {
 			print("Pavlo readCharacteristic start discoverServices")
 			GattCallback.shared.dataReceiver = receiver
-			let _ = bluetoothGatt.discoverServices()
+			let success = bluetoothGatt.discoverServices()
+			print("Pavlo readCharacteristic start discoverServices success = \(success)")
 		} else {
 			receiver(nil)	
 		}		
@@ -142,7 +143,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		if let bluetoothGatt = self.bluetoothGatt {
 			GattCallback.shared.dataReceiver = receiver
 			print("Pavlo notifyCharacteristic start discoverServices")
-			let _ = bluetoothGatt.discoverServices()
+			let success = bluetoothGatt.discoverServices()
+			print("Pavlo notifyCharacteristic start discoverServices success = \(success)")
 		} else {
 			receiver(nil)	
 		}		
