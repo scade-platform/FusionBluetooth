@@ -87,15 +87,17 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	}
 	
     public func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
+    	print("Pavlo connectDevice uuid = \(uuid)")
         if let device = BluetoothReceiver.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }) {
             if let bluetoothGatt = self.bluetoothGatt {
+            	print("Pavlo connectDevice existed already so close")
                 bluetoothGatt.close()
                 self.bluetoothGatt = nil
             }
+            print("Pavlo connectDevice start connect")
+            GattCallback.shared.connectReceiver = receiver
+            GattCallback.shared.device = device            
             self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
-            GattCallback.shared.connectReceiver = receiver
-            GattCallback.shared.connectReceiver = receiver
-            GattCallback.shared.device = device
         } else {
             receiver(nil)
         }
@@ -162,16 +164,22 @@ public class GattCallback: Object, BluetoothGattCallback {
 	var writeData: Data?
 	
     public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
+    	print("Pavlo onConnectionStateChange")
     	guard let device = device else {
     		connectReceiver?(nil)
     		return
     	}
     	
         if newState == BluetoothProfileStatic.STATE_CONNECTED {
-        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)        	connectReceiver?(peripheral)
+        	print("Pavlo onConnectionStateChange connected")
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)
+        	connectReceiver?(peripheral)
         } else if (newState == BluetoothProfileStatic.STATE_DISCONNECTED) {
-        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)        	connectReceiver?(peripheral)            
+        	print("Pavlo onConnectionStateChange disconnected")
+        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)
+        	connectReceiver?(peripheral)            
         } else {
+        	print("Pavlo onConnectionStateChange empty")
         	connectReceiver?(nil)
         }        
     }
