@@ -128,15 +128,17 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }
     	
 	public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
-		print("Pavlo readCharacteristic uuid = \(uuid)")
-		if let bluetoothGatt = self.bluetoothGatt {
-			print("Pavlo readCharacteristic start discoverServices")
-			GattCallback.shared.dataReceiver = receiver
-			let success = bluetoothGatt.discoverServices()
-			print("Pavlo readCharacteristic start discoverServices success = \(success)")
-		} else {
-			receiver(nil)	
-		}		
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            print("Pavlo readCharacteristic uuid = \(uuid)")
+            if let bluetoothGatt = self.bluetoothGatt {
+                print("Pavlo readCharacteristic start discoverServices")
+                GattCallback.shared.dataReceiver = receiver
+                let success = bluetoothGatt.discoverServices()
+                print("Pavlo readCharacteristic start discoverServices success = \(success)")
+            } else {
+                receiver(nil)
+            }
+        }	
 	}
 	
 	public func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
