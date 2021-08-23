@@ -128,7 +128,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }
     	
 	public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.1) {
             print("Pavlo readCharacteristic uuid = \(uuid)")
             if let bluetoothGatt = self.bluetoothGatt {
                 print("Pavlo readCharacteristic start discoverServices")
