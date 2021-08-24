@@ -87,7 +87,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	
     public func connectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
     	print("Pavlo connectDevice uuid = \(uuid)")
-        if let device = LeScanCallback.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }) {
+//        if let device = LeScanCallback.shared.deviceArray.first(where: { "\($0.getAddress())" == uuid }) {
+		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: uuid) {
             if let bluetoothGatt = self.bluetoothGatt {
             	print("Pavlo connectDevice existed already so close")
                 bluetoothGatt.close()
