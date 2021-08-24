@@ -79,6 +79,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	}
 	
 	public func stopDiscovering() {
+		print("Pavlo stopDiscovering")
 		let _ = self.bluetoothAdapter?.cancelDiscovery()
 		if let bluetoothLeScanner = self.bluetoothLeScanner {
 			bluetoothLeScanner.stopScan(callback: LeScanCallback.shared)
@@ -104,6 +105,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }
 	
 	public func disconnectDevice(uuid: String, receiver: @escaping (Peripheral?) -> Void) {
+		print("Pavlo disconnectDevice uuid = \(uuid)")
 		if let bluetoothGatt = self.bluetoothGatt {
 			bluetoothGatt.close()
 			self.bluetoothGatt = nil
@@ -113,6 +115,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 	}
 	
     public func enableBluetooth() -> Bool {
+    	print("Pavlo enableBluetooth")
 	    if let bluetoothApdater = self.bluetoothAdapter {
     		return bluetoothApdater.enable()
     	} else {
@@ -121,6 +124,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }
     
     public func disableBluetooth() -> Bool {
+    	print("Pavlo disableBluetooth")
 	    if let bluetoothApdater = self.bluetoothAdapter {
     		return bluetoothApdater.disable()
     	} else {
