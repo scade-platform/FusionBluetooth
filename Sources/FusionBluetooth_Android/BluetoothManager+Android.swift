@@ -172,7 +172,7 @@ public class GattCallback: Object, BluetoothGattCallback {
 	var writeData: Data?
 	
     public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
-    	print("Pavlo onConnectionStateChange")
+    	print("Pavlo onConnectionStateChange status = \(status) newState = \(newState)")
     	guard let device = device else {
     		connectReceiver?(nil)
     		return
