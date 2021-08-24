@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Android",
+        "repositoryURL": "https://github.com/scade-platform/swift-android.git",
+        "state": {
+          "branch": "android/24",
+          "revision": "ea0baa79fc0a6eee65cc221719fd901e95863fb0",
+          "version": null
+        }
+      },
+      {
+        "package": "Java",
+        "repositoryURL": "https://github.com/scade-platform/swift-java.git",
+        "state": {
+          "branch": null,
+          "revision": "3eb20f61080992e37eed5c31f2ea8afdb19f0a0c",
+          "version": "0.1.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
