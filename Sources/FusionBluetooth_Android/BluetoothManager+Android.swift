@@ -138,8 +138,9 @@ extension BluetoothManager: BluetoothManagerProtocol {
             if let bluetoothGatt = self.bluetoothGatt {
                 print("Pavlo readCharacteristic start discoverServices")
                 GattCallback.shared.readCharacteristicReceiver = receiver
-                let success = bluetoothGatt.discoverServices()
-                print("Pavlo readCharacteristic start discoverServices success = \(success)")
+//                let success = bluetoothGatt.discoverServices()
+				GattCallback.shared.requestReadCharacteristics(gatt: bluetoothGatt)
+                print("Pavlo readCharacteristic start discoverServices request")
             } else {
                 receiver(nil)
             }
@@ -179,6 +180,10 @@ public class GattCallback: Object, BluetoothGattCallback {
   	
 	var device: BluetoothDevice?
 	var writeData: Data?
+	
+	var readChars: [BluetoothGattCharacteristic] = []
+	var notifyChars: [BluetoothGattCharacteristic] = []
+	var writeChars: [BluetoothGattCharacteristic] = []		
 	
     public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
     	print("Pavlo onConnectionStateChange status = \(status) newState = \(newState)")
@@ -221,8 +226,8 @@ public class GattCallback: Object, BluetoothGattCallback {
                                 let _ = gatt.writeCharacteristic(characteristic: gattCharacteristic)
                             }
                         } else if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) == 0 {
-                            let success = gatt.readCharacteristic(characteristic: gattCharacteristic)
-                            print("Pavlo onServicesDiscovered gattCharacteristic !!! read success = \(success)")
+                        	readChars.append(gattCharacteristic)
+                            print("Pavlo onServicesDiscovered gattCharacteristic !!! read")
                         } else if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) == 0 {
                         	print("Pavlo onServicesDiscovered gattCharacteristic !!! notify")
                             let _ = gatt.setCharacteristicNotification(characteristic: gattCharacteristic, enable: true)
@@ -240,8 +245,9 @@ public class GattCallback: Object, BluetoothGattCallback {
 	    
     public func onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int32) {
     	print("Pavlo onCharacteristicRead")
-    	if let bytes = characteristic?.getValue() {
+    	if let gatt = gatt, let bytes = characteristic?.getValue() {
     		print("Pavlo onCharacteristicRead !!!")
+    		requestReadCharacteristics(gatt: gatt)
     		let readValue = Data(bytes: bytes, count: bytes.count)
 			readCharacteristicReceiver?(readValue)
     	} else {
@@ -258,6 +264,18 @@ public class GattCallback: Object, BluetoothGattCallback {
     	} else {
 			notifyCharacteristicReceiver?(nil)    		
     	}
+	}
+}
+
+extension GattCallback {
+	public func requestReadCharacteristics(gatt: BluetoothGatt) {
+		print("Pavlo requestReadCharacteristics readChars count = \(readChars.count)")
+		guard readChars.count > 0 else { return }
+		if !gatt.readCharacteristic(characteristic: readChars[readChars.count - 1]) {
+			print("Pavlo requestReadCharacteristics read failed. so try next")
+			readChars.removeLast()
+			requestReadCharacteristics(gatt: gatt)
+		}
 	}
 }
 
