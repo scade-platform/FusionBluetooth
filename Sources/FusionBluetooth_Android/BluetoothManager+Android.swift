@@ -153,7 +153,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 			GattCallback.shared.requestNotifyCharacteristics(gatt: bluetoothGatt)
 			print("Pavlo notifyCharacteristic start discoverServices request")
 		} else {
-			receiver(nil)	
+			receiver(nil)
 		}		
 	}
     public func writeCharacteristic(uuid: String, data: Data) {
@@ -285,7 +285,8 @@ extension GattCallback {
 		print("Pavlo requestRead readChars count = \(readChars.count)")		
 		guard readChars.count > 0 else { return }
 		if !gatt.readCharacteristic(characteristic: readChars[readChars.count - 1]) {
-			print("Pavlo requestReadCharacteristics read failed. so try next")			
+			print("Pavlo requestReadCharacteristics read failed. so try next")
+			readChars.removeLast()
 			requestReadCharacteristics(gatt: gatt)
 		}
 		readChars.removeLast()
@@ -296,7 +297,8 @@ extension GattCallback {
 		guard notifyChars.count > 0 else { return }
 		let _ = gatt.setCharacteristicNotification(characteristic: notifyChars[notifyChars.count - 1], enable: true)
 		if !gatt.readCharacteristic(characteristic: notifyChars[notifyChars.count - 1]) {
-			print("Pavlo requestNotify notify failed. so try next")			
+			print("Pavlo requestNotify notify failed. so try next")
+			notifyChars.removeLast()
 			requestReadCharacteristics(gatt: gatt)
 		}
 		notifyChars.removeLast()
@@ -308,7 +310,8 @@ extension GattCallback {
 		let writeChar = writeChars[writeChars.count - 1]
 		let _ = writeChar.setValue(value: writeData.map{Int8(bitPattern: $0)})		
 		if !gatt.writeCharacteristic(characteristic: writeChar) {
-			print("Pavlo requestWriteCharacteristics read failed. so try next")			
+			print("Pavlo requestWriteCharacteristics read failed. so try next")
+			writeChars.removeLast()
 			requestWriteCharacteristics(gatt: gatt)
 		}
 		writeChars.removeLast()
