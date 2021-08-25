@@ -255,9 +255,10 @@ public class GattCallback: Object, BluetoothGattCallback {
     public func onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int32) {
     	print("Pavlo onCharacteristicRead")
     	if let gatt = gatt, let bytes = characteristic?.getValue() {
-    		print("Pavlo onCharacteristicRead !!!")
+    		print("Pavlo onCharacteristicRead !!! bytes = \(bytes.count)")
     		requestReadCharacteristics(gatt: gatt)
     		let readValue = Data(bytes: bytes, count: bytes.count)
+    		print("Pavlo onCharacteristicRead !!! readValue = \(readValue)")
 			readCharacteristicReceiver?(readValue)
     	} else {
 			readCharacteristicReceiver?(nil)    		
