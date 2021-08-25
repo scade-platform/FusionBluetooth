@@ -133,18 +133,16 @@ extension BluetoothManager: BluetoothManagerProtocol {
     }
     	
 	public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.1) {
-            print("Pavlo readCharacteristic uuid = \(uuid)")
-            if let bluetoothGatt = self.bluetoothGatt {
-                print("Pavlo readCharacteristic start discoverServices")
-                GattCallback.shared.readCharacteristicReceiver = receiver
+        print("Pavlo readCharacteristic uuid = \(uuid)")
+        if let bluetoothGatt = self.bluetoothGatt {
+            print("Pavlo readCharacteristic start discoverServices")
+            GattCallback.shared.readCharacteristicReceiver = receiver
 //                let success = bluetoothGatt.discoverServices()
-				GattCallback.shared.requestReadCharacteristics(gatt: bluetoothGatt)
-                print("Pavlo readCharacteristic start discoverServices request")
-            } else {
-                receiver(nil)
-            }
-        }	
+            GattCallback.shared.requestReadCharacteristics(gatt: bluetoothGatt)
+            print("Pavlo readCharacteristic start discoverServices request")
+        } else {
+            receiver(nil)
+        }
 	}
 	
 	public func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
@@ -268,7 +266,7 @@ public class GattCallback: Object, BluetoothGattCallback {
 	public func onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
 		print("Pavlo onCharacteristicChanged")
     	if let gatt = gatt, let bytes = characteristic?.getValue() {
-    		print("Pavlo onCharacteristicChanged !!!")
+    		print("Pavlo onCharacteristicChanged !!! bytes = \(bytes.count)")
     		requestNotifyCharacteristics(gatt: gatt)
     		let readValue = Data(bytes: bytes, count: bytes.count)
 			notifyCharacteristicReceiver?(readValue)
