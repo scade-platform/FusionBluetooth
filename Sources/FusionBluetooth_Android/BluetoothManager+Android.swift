@@ -176,7 +176,7 @@ public class GattCallback: Object, BluetoothGattCallback {
 	typealias DataReceiver = (Data?) -> Void	
   	var readCharacteristicReceiver: DataReceiver?
   	var notifyCharacteristicReceiver: DataReceiver?
-  	var writeCharacteristicReceiver: DataReceiver?	
+  	var writeCharacteristicReceiver: ((Bool) -> Void)?	
   	
 	var device: BluetoothDevice?
 	var writeData: Data?
@@ -194,9 +194,7 @@ public class GattCallback: Object, BluetoothGattCallback {
     	
         if newState == BluetoothProfileStatic.STATE_CONNECTED {
         	print("Pavlo onConnectionStateChange connected")
-        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)
         	let _ = gatt?.discoverServices()
-        	connectReceiver?(peripheral)
         } else if (newState == BluetoothProfileStatic.STATE_DISCONNECTED) {
         	print("Pavlo onConnectionStateChange disconnected")
         	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)
@@ -209,8 +207,12 @@ public class GattCallback: Object, BluetoothGattCallback {
     
     public func onServicesDiscovered(gatt: BluetoothGatt?, status: Int32) {
     	print("Pavlo onServicesDiscovered")
-        if status == BluetoothGatt.GATT_SUCCESS, let gatt = gatt, let services = gatt.getServices() {
+        if status == BluetoothGatt.GATT_SUCCESS, let gatt = gatt, let services = gatt.getServices(), let device = device {
         	print("Pavlo onServicesDiscovered gatt success")
+        	readChars = []
+        	notifyChars = []
+        	writeChars = []
+        	
             for gattService in services {
                 if let gattService = gattService, let characteristics = gattService.getCharacteristics() {
                 	print("Pavlo onServicesDiscovered getCharacteristics")
@@ -220,26 +222,32 @@ public class GattCallback: Object, BluetoothGattCallback {
                     	print("Pavlo onServicesDiscovered gattCharacteristic uuid = \(gattCharacteristic.getUuid()?.toString())")
                         if (gattCharacteristic.getProperties() & (BluetoothGattCharacteristic.PROPERTY_WRITE | BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE)) != 0 {
                             print("Pavlo onServicesDiscovered gattCharacteristic !!! write")
-                            if let writeData = writeData {
-                                let _ = gattCharacteristic.setValue(value: writeData.map{Int8(bitPattern: $0)})
-                                let _ = gatt.writeCharacteristic(characteristic: gattCharacteristic)
-                            }
+                            writeChars.append(gattCharacteristic)
                         } else if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) != 0 {
                         	readChars.append(gattCharacteristic)
                             print("Pavlo onServicesDiscovered gattCharacteristic !!! read")
                         } else if (gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0 {
                         	print("Pavlo onServicesDiscovered gattCharacteristic !!! notify")
-                            let _ = gatt.setCharacteristicNotification(characteristic: gattCharacteristic, enable: true)
-                            let _ = gatt.readCharacteristic(characteristic: gattCharacteristic)
+                            notifyChars.append(gattCharacteristic)
                         }
                     }
                 }
             }
+            
+            let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)
+            connectReceiver?(peripheral)
         }
     }
     
 	public func onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int32) {
-
+		print("Pavlo onCharacteristicWrite")
+    	if let gatt = gatt {
+    		print("Pavlo onCharacteristicWrite !!!")
+    		requestWriteCharacteristics(gatt: gatt)
+			writeCharacteristicReceiver?(true)
+    	} else {
+			writeCharacteristicReceiver?(false)
+    	}
 	}
 	    
     public func onCharacteristicRead(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int32) {
@@ -256,19 +264,20 @@ public class GattCallback: Object, BluetoothGattCallback {
 	
 	public func onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
 		print("Pavlo onCharacteristicChanged")
-    	if let bytes = characteristic?.getValue() {
+    	if let gatt = gatt, let bytes = characteristic?.getValue() {
     		print("Pavlo onCharacteristicChanged !!!")
+    		requestNotifyCharacteristics(gatt: gatt)
     		let readValue = Data(bytes: bytes, count: bytes.count)
 			notifyCharacteristicReceiver?(readValue)
     	} else {
-			notifyCharacteristicReceiver?(nil)    		
+			notifyCharacteristicReceiver?(nil)
     	}
 	}
 }
 
 extension GattCallback {
-	public func requestReadCharacteristics(gatt: BluetoothGatt) {
-		print("Pavlo request readChars count = \(readChars.count)")		
+	private func requestReadCharacteristics(gatt: BluetoothGatt) {
+		print("Pavlo requestRead readChars count = \(readChars.count)")		
 		guard readChars.count > 0 else { return }
 		if !gatt.readCharacteristic(characteristic: readChars[readChars.count - 1]) {
 			print("Pavlo requestReadCharacteristics read failed. so try next")
@@ -276,6 +285,29 @@ extension GattCallback {
 			requestReadCharacteristics(gatt: gatt)
 		}
 	}
+	
+	private func requestNotifyCharacteristics(gatt: BluetoothGatt) {
+		print("Pavlo requestNotify notifyChars count = \(notifyChars.count)")		
+		guard notifyChars.count > 0 else { return }
+		let _ = gatt.setCharacteristicNotification(characteristic: notifyChars[notifyChars.count - 1], enable: true)
+		if !gatt.readCharacteristic(characteristic: notifyChars[notifyChars.count - 1]) {
+			print("Pavlo requestNotify notify failed. so try next")
+			notifyChars.removeLast()
+			requestReadCharacteristics(gatt: gatt)
+		}
+	}
+	
+	private func requestWriteCharacteristics(gatt: BluetoothGatt) {
+		print("Pavlo requestWrite writeChars count = \(writeChars.count)")		
+		guard let writeData = writeData, writeChars.count > 0 else { return }
+		let writeChar = writeChars[writeChars.count - 1]
+		let _ = writeChar.setValue(value: writeData.map{Int8(bitPattern: $0)})		
+		if !gatt.writeCharacteristic(characteristic: writeChar) {
+			print("Pavlo requestWriteCharacteristics read failed. so try next")
+			writeChars.removeLast()
+			requestWriteCharacteristics(gatt: gatt)
+		}
+	}	
 }
 
 public class LeScanCallback: Object, ScanCallback {
