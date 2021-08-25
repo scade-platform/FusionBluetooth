@@ -299,7 +299,7 @@ extension GattCallback {
 		if !gatt.readCharacteristic(characteristic: notifyChars[notifyChars.count - 1]) {
 			print("Pavlo requestNotify notify failed. so try next")
 			notifyChars.removeLast()
-			requestReadCharacteristics(gatt: gatt)
+			requestNotifyCharacteristics(gatt: gatt)
 		}
 		notifyChars.removeLast()
 	}
