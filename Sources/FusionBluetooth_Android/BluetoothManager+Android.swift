@@ -151,8 +151,9 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		if let bluetoothGatt = self.bluetoothGatt {
 			GattCallback.shared.notifyCharacteristicReceiver = receiver
 			print("Pavlo notifyCharacteristic start discoverServices")
-			let success = bluetoothGatt.discoverServices()
-			print("Pavlo notifyCharacteristic start discoverServices success = \(success)")
+//			let success = bluetoothGatt.discoverServices()
+			GattCallback.shared.requestNotifyCharacteristics(gatt: bluetoothGatt)
+			print("Pavlo notifyCharacteristic start discoverServices request")
 		} else {
 			receiver(nil)	
 		}		
@@ -161,7 +162,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		if let bluetoothGatt = self.bluetoothGatt {
 			print("Pavlo writeCharacteristic start discoverServices")
 			GattCallback.shared.writeData = data
-			let _ = bluetoothGatt.discoverServices()
+//			let _ = bluetoothGatt.discoverServices()
+			GattCallback.shared.requestWriteCharacteristics(gatt: bluetoothGatt)
 		}
     }
     
@@ -280,10 +282,10 @@ extension GattCallback {
 		print("Pavlo requestRead readChars count = \(readChars.count)")		
 		guard readChars.count > 0 else { return }
 		if !gatt.readCharacteristic(characteristic: readChars[readChars.count - 1]) {
-			print("Pavlo requestReadCharacteristics read failed. so try next")
-			readChars.removeLast()
+			print("Pavlo requestReadCharacteristics read failed. so try next")			
 			requestReadCharacteristics(gatt: gatt)
 		}
+		readChars.removeLast()
 	}
 	
 	func requestNotifyCharacteristics(gatt: BluetoothGatt) {
@@ -291,10 +293,10 @@ extension GattCallback {
 		guard notifyChars.count > 0 else { return }
 		let _ = gatt.setCharacteristicNotification(characteristic: notifyChars[notifyChars.count - 1], enable: true)
 		if !gatt.readCharacteristic(characteristic: notifyChars[notifyChars.count - 1]) {
-			print("Pavlo requestNotify notify failed. so try next")
-			notifyChars.removeLast()
+			print("Pavlo requestNotify notify failed. so try next")			
 			requestReadCharacteristics(gatt: gatt)
 		}
+		notifyChars.removeLast()
 	}
 	
 	func requestWriteCharacteristics(gatt: BluetoothGatt) {
@@ -303,10 +305,10 @@ extension GattCallback {
 		let writeChar = writeChars[writeChars.count - 1]
 		let _ = writeChar.setValue(value: writeData.map{Int8(bitPattern: $0)})		
 		if !gatt.writeCharacteristic(characteristic: writeChar) {
-			print("Pavlo requestWriteCharacteristics read failed. so try next")
-			writeChars.removeLast()
+			print("Pavlo requestWriteCharacteristics read failed. so try next")			
 			requestWriteCharacteristics(gatt: gatt)
 		}
+		writeChars.removeLast()
 	}	
 }
 
