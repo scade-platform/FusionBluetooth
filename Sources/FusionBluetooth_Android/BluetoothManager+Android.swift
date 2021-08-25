@@ -276,7 +276,7 @@ public class GattCallback: Object, BluetoothGattCallback {
 }
 
 extension GattCallback {
-	private func requestReadCharacteristics(gatt: BluetoothGatt) {
+	func requestReadCharacteristics(gatt: BluetoothGatt) {
 		print("Pavlo requestRead readChars count = \(readChars.count)")		
 		guard readChars.count > 0 else { return }
 		if !gatt.readCharacteristic(characteristic: readChars[readChars.count - 1]) {
@@ -286,7 +286,7 @@ extension GattCallback {
 		}
 	}
 	
-	private func requestNotifyCharacteristics(gatt: BluetoothGatt) {
+	func requestNotifyCharacteristics(gatt: BluetoothGatt) {
 		print("Pavlo requestNotify notifyChars count = \(notifyChars.count)")		
 		guard notifyChars.count > 0 else { return }
 		let _ = gatt.setCharacteristicNotification(characteristic: notifyChars[notifyChars.count - 1], enable: true)
@@ -297,7 +297,7 @@ extension GattCallback {
 		}
 	}
 	
-	private func requestWriteCharacteristics(gatt: BluetoothGatt) {
+	func requestWriteCharacteristics(gatt: BluetoothGatt) {
 		print("Pavlo requestWrite writeChars count = \(writeChars.count)")		
 		guard let writeData = writeData, writeChars.count > 0 else { return }
 		let writeChar = writeChars[writeChars.count - 1]
