@@ -288,8 +288,9 @@ extension GattCallback {
 			print("Pavlo requestReadCharacteristics read failed. so try next")
 			readChars.removeLast()
 			requestReadCharacteristics(gatt: gatt)
-		}
-		readChars.removeLast()
+		} else {
+			readChars.removeLast()
+		}		
 	}
 	
 	func requestNotifyCharacteristics(gatt: BluetoothGatt) {
@@ -300,8 +301,9 @@ extension GattCallback {
 			print("Pavlo requestNotify notify failed. so try next")
 			notifyChars.removeLast()
 			requestNotifyCharacteristics(gatt: gatt)
-		}
-		notifyChars.removeLast()
+		} else {
+			notifyChars.removeLast()	
+		}		
 	}
 	
 	func requestWriteCharacteristics(gatt: BluetoothGatt) {
@@ -313,8 +315,9 @@ extension GattCallback {
 			print("Pavlo requestWriteCharacteristics read failed. so try next")
 			writeChars.removeLast()
 			requestWriteCharacteristics(gatt: gatt)
-		}
-		writeChars.removeLast()
+		} else {
+			writeChars.removeLast()	
+		}		
 	}	
 }
 
