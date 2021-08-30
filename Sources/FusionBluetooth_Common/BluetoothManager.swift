@@ -55,7 +55,7 @@ public enum BMError: Equatable, Error {
     case notFound // The application could not find the Bluetooth Device.
     case error(String)
     
-    func description() -> String {
+    public func description() -> String {
         switch self {
         case .unknown:
             return "Unexpected error"
