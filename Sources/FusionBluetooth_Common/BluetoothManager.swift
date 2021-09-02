@@ -1,5 +1,4 @@
 import Foundation
-
 /**
  *  @struct Peripheral
  *
@@ -103,50 +102,59 @@ public protocol BluetoothManagerProtocol {
     /*
      * @method connectDevice:
      *
-     * @param uuid Peripheral identifier in iOS and Device Mac addres in Android
-     * @param receiver Returns the Peripheral connected.
+     * @param peripheral Peripheral
+     * @param receiver Returns the success or error of Peripheral connection.
      *
      * @discussion Connects a peripheral
      */
-    func connectDevice(uuid: String, receiver: @escaping (Peripheral?, BMError?) -> Void)
+    func connectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void)
     
     /*
      * @method disconnectDevice:
      *
-     * @param uuid Peripheral identifier in iOS and Device Mac addres in Android
-     * @param receiver Returns the Peripheral disconnected.
+     * @param peripheral Peripheral
+     * @param receiver Returns the success or error of Peripheral disconnection.
      *
      * @discussion Disconnects a peripheral
      */
-    func disconnectDevice(uuid: String, receiver: @escaping (Peripheral?, BMError?) -> Void)
+    func disconnectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void)
 
+    /*
+     * @method isConnected:
+     *
+     * @param peripheral Peripheral
+     *
+     * @discussion Returns whether or not the bluetooth device is connected
+     */
+    func isConnected(peripheral: Peripheral) -> Bool
+    
     /*
      * @method writeCharacteristic:
      *
-     * @param uuid Peripheral identifier in iOS and Device Mac addres in Android
+     * @param peripheral Peripheral
      * @param data A data to send
      *
      * @discussion write a Characteristic to a peripheral.
      */
-    func writeCharacteristic(uuid: String, data: Data)
+    func writeCharacteristic(peripheral: Peripheral, data: Data)
             
     /*
      * @method readCharacteristic:
      *
-     * @param uuid Peripheral identifier in iOS and Device Mac addres in Android
+     * @param peripheral Peripheral
      * @param data A data received
      *
      * @discussion Read a Characteristic from a peripheral.
      */
-    func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void)
+    func readCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void)
     
     /*
      * @method notifyCharacteristic:
      *
-     * @param uuid Peripheral identifier in iOS and Device Mac addres in Android
+     * @param peripheral Peripheral
      * @param data A data received
      *
      * @discussion Notify a Characteristic from a peripheral.
      */
-    func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void)
+    func notifyCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void)
 }

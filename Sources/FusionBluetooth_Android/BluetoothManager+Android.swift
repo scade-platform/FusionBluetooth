@@ -51,8 +51,8 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		}
 	}
 	
-    public func connectDevice(uuid: String, receiver: @escaping (Peripheral?, BMError?) -> Void) {
-		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: uuid) {
+    public func connectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void) {
+		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
             if let bluetoothGatt = self.bluetoothGatt {
                 bluetoothGatt.close()
                 self.bluetoothGatt = nil
@@ -62,21 +62,29 @@ extension BluetoothManager: BluetoothManagerProtocol {
             GattCallback.shared.device = device            
             self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
         } else {
-            receiver(nil, .notFound)
+            receiver(false, .notFound)
         }
     }
 	
-	public func disconnectDevice(uuid: String, receiver: @escaping (Peripheral?, BMError?) -> Void) {
+	public func disconnectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void) {
 		if let bluetoothGatt = self.bluetoothGatt {
 			bluetoothGatt.close()
 			self.bluetoothGatt = nil
-		}
-		
-		receiver(nil, .notFound)		
+		} else {
+			receiver(false, .notFound)	
+		}			
 	}
 
-    	
-	public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
+    public func isConnected(peripheral: Peripheral) -> Bool {
+        if let bluetoothAdapter = bluetoothAdapter,
+           let bluetoothGatt = bluetoothGatt,
+           let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
+           return bluetoothGatt.getConnectionState(device: device) == BluetoothProfileStatic.STATE_CONNECTED
+        }
+        return false
+    }
+        	
+	public func readCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void) {
         if let bluetoothGatt = self.bluetoothGatt {
             GattCallback.shared.readCharacteristicReceiver = receiver
             GattCallback.shared.requestReadCharacteristics(gatt: bluetoothGatt)
@@ -85,7 +93,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
         }
 	}
 	
-	public func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
+	public func notifyCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void) {
 		if let bluetoothGatt = self.bluetoothGatt {
 			GattCallback.shared.notifyCharacteristicReceiver = receiver
 			GattCallback.shared.requestNotifyCharacteristics(gatt: bluetoothGatt)
@@ -93,7 +101,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 			receiver(nil)
 		}		
 	}
-    public func writeCharacteristic(uuid: String, data: Data) {
+    public func writeCharacteristic(peripheral: Peripheral, data: Data) {
 		if let bluetoothGatt = self.bluetoothGatt {
 			GattCallback.shared.writeData = data
 			GattCallback.shared.requestWriteCharacteristics(gatt: bluetoothGatt)
@@ -161,7 +169,7 @@ extension BluetoothManager {
 
 public class GattCallback: Object, BluetoothGattCallback {
 	static let shared = GattCallback()
-	var connectReceiver: ((Peripheral?, BMError?) -> Void)?
+	var connectReceiver: ((Bool, BMError?) -> Void)?
 	
 	typealias DataReceiver = (Data?) -> Void	
   	var readCharacteristicReceiver: DataReceiver?
@@ -176,23 +184,17 @@ public class GattCallback: Object, BluetoothGattCallback {
 	var writeChars: [BluetoothGattCharacteristic] = []		
 	
     public func onConnectionStateChange(gatt: BluetoothGatt?, status: Int32, newState: Int32) {
-    	guard let device = device else {
-    		connectReceiver?(nil, .notFound)
-    		return
-    	}
-    	
         if newState == BluetoothProfileStatic.STATE_CONNECTED {
         	let _ = gatt?.discoverServices()
         } else if (newState == BluetoothProfileStatic.STATE_DISCONNECTED) {
-        	let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: false)
-        	connectReceiver?(peripheral, nil)            
+        	connectReceiver?(true, nil)            
         } else {
-        	connectReceiver?(nil, .notFound)
+        	connectReceiver?(false, .notFound)
         }        
     }
     
     public func onServicesDiscovered(gatt: BluetoothGatt?, status: Int32) {
-        if status == BluetoothGatt.GATT_SUCCESS, let gatt = gatt, let services = gatt.getServices(), let device = device {
+        if status == BluetoothGatt.GATT_SUCCESS, let gatt = gatt, let services = gatt.getServices() {
         	readChars = []
         	notifyChars = []
         	writeChars = []
@@ -213,8 +215,7 @@ public class GattCallback: Object, BluetoothGattCallback {
                 }
             }
             
-            let peripheral = Peripheral(name: device.getName(), uuid: device.getAddress(), isConnected: true)
-            connectReceiver?(peripheral, nil)
+            connectReceiver?(true, nil)
         }
     }
     

@@ -4,10 +4,12 @@ import CoreBluetooth
 
 public class BluetoothManager {
     fileprivate class CBCDelegate: NSObject {
-        typealias Receiver = (Peripheral?, BMError?) -> Void
+        typealias DiscoverReceiver = (Peripheral?, BMError?) -> Void
+        typealias ConnectReceiver = (Bool, BMError?) -> Void
         typealias DataReceiver = (Data?) -> Void
-        var discoverReceiver: Receiver?
-        var connectReceiver: Receiver?
+        var discoverReceiver: DiscoverReceiver?
+        var connectReceiver: ConnectReceiver?
+        var disconnectReceiver: ConnectReceiver?
         var readCharacteristicReceiver: DataReceiver?
         var notifyCharacteristicReceiver: DataReceiver?
         var writeCharacteristicReceiver: DataReceiver?
@@ -39,27 +41,35 @@ extension BluetoothManager: BluetoothManagerProtocol {
         centralManager.stopScan()
     }
     
-    public func connectDevice(uuid: String, receiver: @escaping (Peripheral?, BMError?) -> Void) {
+    public func connectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void) {
         self.delegate.connectReceiver = receiver
-        if let peripheral = self.delegate.peripheralArray.first(where: { "\($0.identifier)" == uuid }) {
+        if let peripheral = self.delegate.peripheralArray.first(where: { "\($0.identifier)" == peripheral.uuid }) {
             centralManager.connect(peripheral, options: nil)
         } else {
-            receiver(nil, .notFound)
+            receiver(false, .notFound)
         }
     }
     
-    public func disconnectDevice(uuid: String, receiver: @escaping (Peripheral?, BMError?) -> Void) {
-        self.delegate.connectReceiver = receiver
-        if let peripheral = self.delegate.peripheralArray.first(where: { uuid == "\($0.identifier)" }) {
+    public func disconnectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void) {
+        self.delegate.disconnectReceiver = receiver
+        if let peripheral = self.delegate.peripheralArray.first(where: { peripheral.uuid == "\($0.identifier)" }) {
             centralManager.cancelPeripheralConnection(peripheral)
         } else {
-            receiver(nil, .notFound)
+            receiver(false, .notFound)
         }
+    }
+    
+    public func isConnected(peripheral: Peripheral) -> Bool {
+        if let peripheral = self.delegate.peripheralArray.first(where: { peripheral.uuid == "\($0.identifier)" }) {
+            return peripheral.state == .connected
+        }
+        
+        return false
     }
         
-    public func readCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
+    public func readCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void) {
         self.delegate.readCharacteristicReceiver = receiver
-        if let peripheral = self.delegate.peripheralArray.first(where: { uuid == "\($0.identifier)" }) {
+        if let peripheral = self.delegate.peripheralArray.first(where: { peripheral.uuid == "\($0.identifier)" }) {
             peripheral.delegate = self.delegate
             peripheral.discoverServices(nil)
         } else {
@@ -67,9 +77,9 @@ extension BluetoothManager: BluetoothManagerProtocol {
         }
     }
     
-    public func notifyCharacteristic(uuid: String, receiver: @escaping (Data?) -> Void) {
+    public func notifyCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void) {
         self.delegate.notifyCharacteristicReceiver = receiver
-        if let peripheral = self.delegate.peripheralArray.first(where: { uuid == "\($0.identifier)" }) {
+        if let peripheral = self.delegate.peripheralArray.first(where: { peripheral.uuid == "\($0.identifier)" }) {
             peripheral.delegate = self.delegate
             peripheral.discoverServices(nil)
         } else {
@@ -77,9 +87,9 @@ extension BluetoothManager: BluetoothManagerProtocol {
         }
     }
     
-    public func writeCharacteristic(uuid: String, data: Data) {
+    public func writeCharacteristic(peripheral: Peripheral, data: Data) {
         self.delegate.writeData = data
-        if let peripheral = self.delegate.peripheralArray.first(where: { uuid == "\($0.identifier)" }) {
+        if let peripheral = self.delegate.peripheralArray.first(where: { peripheral.uuid == "\($0.identifier)" }) {
             peripheral.delegate = self.delegate
             peripheral.discoverServices(nil)
         }
@@ -123,23 +133,23 @@ extension BluetoothManager.CBCDelegate: CBCentralManagerDelegate {
         switch central.state {
         case .unknown:
             discoverReceiver?(nil, .unknown)
-            connectReceiver?(nil, .unknown)
+            connectReceiver?(false, .unknown)
         case .unsupported:
             discoverReceiver?(nil, .unsupported)
-            connectReceiver?(nil, .unsupported)
+            connectReceiver?(false, .unsupported)
         case .unauthorized:
             discoverReceiver?(nil, .unauthorized)
-            connectReceiver?(nil, .unauthorized)
+            connectReceiver?(false, .unauthorized)
         case .poweredOff:
             discoverReceiver?(nil, .notEnabled)
-            connectReceiver?(nil, .notEnabled)
+            connectReceiver?(false, .notEnabled)
         case .resetting:
             discoverReceiver?(nil, .discovering)
-            connectReceiver?(nil, .discovering)
+            connectReceiver?(false, .discovering)
         case .poweredOn: break
         @unknown default:
             discoverReceiver?(nil, .unknown)
-            connectReceiver?(nil, .unknown)
+            connectReceiver?(false, .unknown)
         }
     }
   
@@ -153,13 +163,11 @@ extension BluetoothManager.CBCDelegate: CBCentralManagerDelegate {
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
-        let peripheralData = self.convertPeripheral(peripheral: peripheral)
-        connectReceiver?(peripheralData, nil)
+        connectReceiver?(true, nil)
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        let peripheralData = self.convertPeripheral(peripheral: peripheral)
-        connectReceiver?(peripheralData, nil)
+        disconnectReceiver?(true, nil)
     }
     
     private func convertPeripheral(peripheral: CBPeripheral) -> Peripheral{
