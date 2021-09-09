@@ -1,11 +1,10 @@
 import Foundation
 /**
- *  @struct Peripheral
+ *  @struct Device
  *
- *  @discussion The device data for peripheral
  *
  */
-public struct Peripheral: Equatable {
+public struct Device: Equatable {
 
     /**
      *  @property name
@@ -31,11 +30,57 @@ public struct Peripheral: Equatable {
      */
     public var isConnected: Bool
     
+    
     public init(name: String?, uuid: String, isConnected: Bool) {
         self.name = name
         self.uuid = uuid
         self.isConnected = isConnected
     }
+
+    /*
+     * @method connect:
+     *
+     * @param receiver Returns the success or error of Peripheral connection.
+     *
+     * @discussion Connects the device
+     */
+    func connect(receiver: @escaping (Bool, BMError?) -> Void)
+    
+    /*
+     * @method disconnect:
+     *
+     * @param receiver Returns the success or error of Peripheral disconnection.
+     *
+     * @discussion Disconnects the device
+     */
+    func disconnect(receiver: @escaping (Bool, BMError?) -> Void)
+    
+    /*
+     * @method write:
+     *
+     * @param data
+     *
+     * @discussion Write Data to the device.
+     */
+    func write(data: Data)
+            
+    /*
+     * @method read:
+     *
+     * @param data
+     *
+     * @discussion Read data from the device.
+     */
+    func read(receiver: @escaping (Data?) -> Void)
+    
+    /*
+     * @method notify:
+     *
+     * @param data
+     *
+     * @discussion Receive notification data from the device.
+     */
+    func notify(receiver: @escaping (Data?) -> Void)    
 }
 
 /**
@@ -86,75 +131,16 @@ public protocol BluetoothManagerProtocol {
     /*
      * @method startDiscovering:
      *
-     * @param receiver Returns a Peripheral discovered.
+     * @param receiver Returns a Device discovered.
      *
-     * @discussion Start Discovering Peripherals.
+     * @discussion Start discovering devices.
      */
-    func startDiscovering(receiver: @escaping (Peripheral?, BMError?) -> Void)
+    func startDiscovering(receiver: @escaping (Device?, BMError?) -> Void)
     
     /*
      * @method stopDiscovering:
      *
      * @discussion Stops scanning peripherals.
      */
-    func stopDiscovering()
-        
-    /*
-     * @method connectDevice:
-     *
-     * @param peripheral Peripheral
-     * @param receiver Returns the success or error of Peripheral connection.
-     *
-     * @discussion Connects a peripheral
-     */
-    func connectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void)
-    
-    /*
-     * @method disconnectDevice:
-     *
-     * @param peripheral Peripheral
-     * @param receiver Returns the success or error of Peripheral disconnection.
-     *
-     * @discussion Disconnects a peripheral
-     */
-    func disconnectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void)
-
-    /*
-     * @method isConnected:
-     *
-     * @param peripheral Peripheral
-     *
-     * @discussion Returns whether or not the bluetooth device is connected
-     */
-    func isConnected(peripheral: Peripheral) -> Bool
-    
-    /*
-     * @method writeCharacteristic:
-     *
-     * @param peripheral Peripheral
-     * @param data A data to send
-     *
-     * @discussion write a Characteristic to a peripheral.
-     */
-    func writeCharacteristic(peripheral: Peripheral, data: Data)
-            
-    /*
-     * @method readCharacteristic:
-     *
-     * @param peripheral Peripheral
-     * @param data A data received
-     *
-     * @discussion Read a Characteristic from a peripheral.
-     */
-    func readCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void)
-    
-    /*
-     * @method notifyCharacteristic:
-     *
-     * @param peripheral Peripheral
-     * @param data A data received
-     *
-     * @discussion Notify a Characteristic from a peripheral.
-     */
-    func notifyCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void)
+    func stopDiscovering()       
 }
