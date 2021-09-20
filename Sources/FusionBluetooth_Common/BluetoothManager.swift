@@ -1,5 +1,4 @@
 import Foundation
-import ScadeKit
 
 public protocol DeviceProtocol {
     /*
@@ -52,7 +51,7 @@ public protocol DeviceProtocol {
  *
  *
  */
-public class Device: EObject {
+public class Device {
 
     /**
      *  @property name
