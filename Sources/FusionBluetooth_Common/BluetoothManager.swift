@@ -1,42 +1,6 @@
 import Foundation
-/**
- *  @struct Device
- *
- *
- */
-public struct Device: Equatable {
 
-    /**
-     *  @property name
-     *
-     *  @discussion The device name.
-     *
-     */
-    public let name: String?
-    
-    /**
-     *  @property uuid
-     *
-     *  @discussion The identifier in iOS and MAC address in Android.
-     *
-     */
-    public let uuid: String
-    
-     /**
-     *  @property isConnected
-     *
-     *  @discussion The state whether the peripheral is connected or not
-     *
-     */
-    public var isConnected: Bool
-    
-    
-    public init(name: String?, uuid: String, isConnected: Bool) {
-        self.name = name
-        self.uuid = uuid
-        self.isConnected = isConnected
-    }
-
+public protocol DeviceProtocol {
     /*
      * @method connect:
      *
@@ -80,7 +44,45 @@ public struct Device: Equatable {
      *
      * @discussion Receive notification data from the device.
      */
-    func notify(receiver: @escaping (Data?) -> Void)    
+    func notify(receiver: @escaping (Data?) -> Void)
+}
+/**
+ *  @struct Device
+ *
+ *
+ */
+public class Device {
+
+    /**
+     *  @property name
+     *
+     *  @discussion The device name.
+     *
+     */
+    public let name: String?
+    
+    /**
+     *  @property uuid
+     *
+     *  @discussion The identifier in iOS and MAC address in Android.
+     *
+     */
+    public let uuid: String
+    
+     /**
+     *  @property isConnected
+     *
+     *  @discussion The state whether the peripheral is connected or not
+     *
+     */
+    public var isConnected: Bool
+    
+    
+    public init(name: String?, uuid: String, isConnected: Bool) {
+        self.name = name
+        self.uuid = uuid
+        self.isConnected = isConnected
+    }
 }
 
 /**
@@ -142,5 +144,5 @@ public protocol BluetoothManagerProtocol {
      *
      * @discussion Stops scanning peripherals.
      */
-    func stopDiscovering()       
+    func stopDiscovering()
 }
