@@ -40,6 +40,7 @@ public class BluetoothManager {
 	typealias BluetoothAdapter = AndroidBluetooth.BluetoothAdapter
 	typealias BluetoothDevice = AndroidBluetooth.BluetoothDevice
 
+	public static let shared = BluetoothManager()
 	var bluetoothAdapter: BluetoothAdapter?
 	var bluetoothLeScanner: BluetoothLeScanner?
 	var bluetoothGatt: BluetoothGatt?
