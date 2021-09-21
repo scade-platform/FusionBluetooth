@@ -8,6 +8,34 @@ import AndroidBluetooth
 import FusionBluetooth_Common
 import Foundation
 
+extension Device: DeviceProtocol {
+    public func connect(receiver: @escaping (Bool, BMError?) -> Void) {
+        BluetoothManager.shared.connectDevice(device: self) { success, error in
+            self.isConnected = success
+            receiver(success, error)
+        }
+    }
+    
+    public func disconnect(receiver: @escaping (Bool, BMError?) -> Void) {
+        BluetoothManager.shared.disconnectDevice(device: self) { success, error in
+            self.isConnected = !success
+            receiver(success, error)
+        }
+    }
+    
+    public func write(data: Data) {
+        BluetoothManager.shared.writeCharacteristic(device: self, data: data)
+    }
+    
+    public func read(receiver: @escaping (Data?) -> Void) {
+        BluetoothManager.shared.readCharacteristic(device: self, receiver: receiver)
+    }
+    
+    public func notify(receiver: @escaping (Data?) -> Void) {
+        BluetoothManager.shared.notifyCharacteristic(device: self, receiver: receiver)
+    }
+}
+
 public class BluetoothManager {
 	typealias BluetoothAdapter = AndroidBluetooth.BluetoothAdapter
 	typealias BluetoothDevice = AndroidBluetooth.BluetoothDevice
@@ -49,64 +77,7 @@ extension BluetoothManager: BluetoothManagerProtocol {
 		if let bluetoothLeScanner = self.bluetoothLeScanner {
 			bluetoothLeScanner.stopScan(callback: LeScanCallback.shared)
 		}
-	}
-	
-    public func connectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void) {
-		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
-            if let bluetoothGatt = self.bluetoothGatt {
-                bluetoothGatt.close()
-                self.bluetoothGatt = nil
-            }
-
-            GattCallback.shared.connectReceiver = receiver
-            GattCallback.shared.device = device            
-            self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
-        } else {
-            receiver(false, .notFound)
-        }
-    }
-	
-	public func disconnectDevice(peripheral: Peripheral, receiver: @escaping (Bool, BMError?) -> Void) {
-		if let bluetoothGatt = self.bluetoothGatt {
-			bluetoothGatt.close()
-			self.bluetoothGatt = nil
-		} else {
-			receiver(false, .notFound)	
-		}			
-	}
-
-    public func isConnected(peripheral: Peripheral) -> Bool {
-        if let bluetoothAdapter = bluetoothAdapter,
-           let bluetoothGatt = bluetoothGatt,
-           let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
-           return bluetoothGatt.getConnectionState(device: device) == BluetoothProfileStatic.STATE_CONNECTED
-        }
-        return false
-    }
-        	
-	public func readCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void) {
-        if let bluetoothGatt = self.bluetoothGatt {
-            GattCallback.shared.readCharacteristicReceiver = receiver
-            GattCallback.shared.requestReadCharacteristics(gatt: bluetoothGatt)
-        } else {
-            receiver(nil)
-        }
-	}
-	
-	public func notifyCharacteristic(peripheral: Peripheral, receiver: @escaping (Data?) -> Void) {
-		if let bluetoothGatt = self.bluetoothGatt {
-			GattCallback.shared.notifyCharacteristicReceiver = receiver
-			GattCallback.shared.requestNotifyCharacteristics(gatt: bluetoothGatt)
-		} else {
-			receiver(nil)
-		}		
-	}
-    public func writeCharacteristic(peripheral: Peripheral, data: Data) {
-		if let bluetoothGatt = self.bluetoothGatt {
-			GattCallback.shared.writeData = data
-			GattCallback.shared.requestWriteCharacteristics(gatt: bluetoothGatt)
-		}
-    } 
+	}	
 }
 
 
@@ -164,7 +135,66 @@ extension BluetoothManager {
     	} else {
     		return false
     	}
-    }	
+    }
+    
+	func connectDevice(device: Device, receiver: @escaping (Bool, BMError?) -> Void) {
+		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
+            if let bluetoothGatt = self.bluetoothGatt {
+                bluetoothGatt.close()
+                self.bluetoothGatt = nil
+            }
+
+            GattCallback.shared.connectReceiver = receiver
+            GattCallback.shared.device = device            
+            self.bluetoothGatt = device.connectGatt(context: nil, autoConnect: false, callback: GattCallback.shared)
+        } else {
+            receiver(false, .notFound)
+        }
+    }
+	
+	func disconnectDevice(device: Device, receiver: @escaping (Bool, BMError?) -> Void) {
+		if let bluetoothGatt = self.bluetoothGatt {
+			bluetoothGatt.close()
+			self.bluetoothGatt = nil
+		} else {
+			receiver(false, .notFound)	
+		}			
+	}
+
+    func isConnected(device: Device) -> Bool {
+        if let bluetoothAdapter = bluetoothAdapter,
+           let bluetoothGatt = bluetoothGatt,
+           let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
+           return bluetoothGatt.getConnectionState(device: device) == BluetoothProfileStatic.STATE_CONNECTED
+        }
+        return false
+    }
+        	
+	func readCharacteristic(device: Device, receiver: @escaping (Data?) -> Void) {
+        if let bluetoothGatt = self.bluetoothGatt {
+            GattCallback.shared.readCharacteristicReceiver = receiver
+            GattCallback.shared.requestReadCharacteristics(gatt: bluetoothGatt)
+        } else {
+            receiver(nil)
+        }
+	}
+	
+	func notifyCharacteristic(device: Device, receiver: @escaping (Data?) -> Void) {
+		if let bluetoothGatt = self.bluetoothGatt {
+			GattCallback.shared.notifyCharacteristicReceiver = receiver
+			GattCallback.shared.requestNotifyCharacteristics(gatt: bluetoothGatt)
+		} else {
+			receiver(nil)
+		}		
+	}
+	
+    func writeCharacteristic(device: Device, data: Data) {
+		if let bluetoothGatt = self.bluetoothGatt {
+			GattCallback.shared.writeData = data
+			GattCallback.shared.requestWriteCharacteristics(gatt: bluetoothGatt)
+		}
+    } 
+
 }
 
 public class GattCallback: Object, BluetoothGattCallback {
