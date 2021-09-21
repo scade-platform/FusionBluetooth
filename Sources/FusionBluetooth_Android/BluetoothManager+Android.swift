@@ -52,7 +52,7 @@ public class BluetoothManager {
 }
 
 extension BluetoothManager: BluetoothManagerProtocol {
-	public func startDiscovering(receiver: @escaping (Peripheral?, BMError?) -> Void) {
+	public func startDiscovering(receiver: @escaping (Device?, BMError?) -> Void) {
 	    guard isAuthorized() else {
 	    	requestAuthorization()
 	     	receiver(nil, .unauthorized)
@@ -138,7 +138,7 @@ extension BluetoothManager {
     }
     
 	func connectDevice(device: Device, receiver: @escaping (Bool, BMError?) -> Void) {
-		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
+		if let bluetoothAdapter = bluetoothAdapter, let device = bluetoothAdapter.getRemoteDevice(address: device.uuid) {
             if let bluetoothGatt = self.bluetoothGatt {
                 bluetoothGatt.close()
                 self.bluetoothGatt = nil
@@ -164,7 +164,7 @@ extension BluetoothManager {
     func isConnected(device: Device) -> Bool {
         if let bluetoothAdapter = bluetoothAdapter,
            let bluetoothGatt = bluetoothGatt,
-           let device = bluetoothAdapter.getRemoteDevice(address: peripheral.uuid) {
+           let device = bluetoothAdapter.getRemoteDevice(address: device.uuid) {
            return bluetoothGatt.getConnectionState(device: device) == BluetoothProfileStatic.STATE_CONNECTED
         }
         return false
@@ -316,7 +316,7 @@ extension GattCallback {
 
 public class LeScanCallback: Object, ScanCallback {
 	static let shared = LeScanCallback()
-	var receiver: ((Peripheral?, BMError?) -> Void)?
+	var receiver: ((Device?, BMError?) -> Void)?
 	var deviceArray: [BluetoothDevice] = []
 	
 	public func onScanResult(callbackType: Int32, result: ScanResult?) {
@@ -326,9 +326,9 @@ public class LeScanCallback: Object, ScanCallback {
         
         if !self.deviceArray.contains(device) {
             self.deviceArray.append(device)
-            let peripheral = Peripheral(name: deviceName, uuid: deviceHardwareAddress, isConnected: false)
+            let device = Device(name: deviceName, uuid: deviceHardwareAddress, isConnected: false)
 
-            receiver?(peripheral, nil)
+            receiver?(device, nil)
         }
 	}
 }
